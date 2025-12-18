@@ -1,0 +1,25 @@
+{
+  "name": "portfolio-website",
+  "version": "1.0.0",
+  "description": "A lightweight, modern portfolio website with GitHub integration",
+  "main": "js/main.js",
+  "scripts": {
+    "build": "esbuild ts/main.ts --bundle --outfile=js/main.js --format=esm --minify",
+    "watch": "esbuild ts/main.ts --bundle --outfile=js/main.js --format=esm --watch",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "portfolio",
+    "github",
+    "typescript"
+  ],
+  "author": "Kylo L.",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.27.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "github-contributions-canvas": "^0.8.0"
+  }
+}
