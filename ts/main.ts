@@ -77,9 +77,9 @@ const PROJECTS: Project[] = [
         tagline: "The best server switcher for DbD",
         about: "Server region changer for Dead by Daylight that modifies Windows/Linux hosts files to redirect game server connections, giving players control over server selection.",
         features: [
-            "Built with .NET framework",
+            "Built with Rust for Linux, C# and .NET framework for Windows",
             "Windows 7-11 compatibility",
-            "Linux rewrite in progress",
+            "Compatible with any modern Linux distribution",
             "Fully open source"
         ],
         images: [
@@ -90,11 +90,11 @@ const PROJECTS: Project[] = [
         links: [
             {
                 label: "Repository",
-                url: "https://codeberg.org/ky/make-your-choice"
+                url: "https://github.com/laewliet/make-your-choice"
             },
             {
                 label: "Download",
-                url: "https://codeberg.org/ky/make-your-choice/releases"
+                url: "https://github.com/laewliet/make-your-choice/releases"
             }
         ]
     },
