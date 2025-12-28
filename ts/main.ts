@@ -1,10 +1,39 @@
 import { drawContributions } from "github-contributions-canvas";
 
 // Configuration
+type GitPlatform = "github" | "gitea" | "codeberg";
+
+interface PlatformConfig {
+    baseUrl: string;
+    apiUrl: string;
+    supportsApi: boolean;
+}
+
 interface Repository {
     owner: string;
     name: string;
+    platform?: GitPlatform;
+    customUrl?: string; // For self-hosted instances or custom URLs
 }
+
+// Platform configurations
+const PLATFORMS: Record<GitPlatform, PlatformConfig> = {
+    github: {
+        baseUrl: "https://github.com",
+        apiUrl: "https://api.github.com",
+        supportsApi: true
+    },
+    gitea: {
+        baseUrl: "https://gitea.com",
+        apiUrl: "https://gitea.com/api/v1",
+        supportsApi: true
+    },
+    codeberg: {
+        baseUrl: "https://codeberg.org",
+        apiUrl: "https://codeberg.org/api/v1",
+        supportsApi: true
+    }
+};
 
 const CONFIG = {
     github: {
@@ -16,13 +45,55 @@ const CONFIG = {
         url: "https://www.linkedin.com/in/kylolinden/"
     },
     repositories: [
-        { owner: "archlinux", name: "archinstall" },
-        { owner: "ValveSoftware", name: "Proton" },
-        { owner: "laewliet", name: "make-your-choice" },
-        { owner: "laewliet", name: "red-ios" },
-        { owner: "laewliet", name: "near-bot" },
+        { owner: "archlinux", name: "archinstall", platform: "github" },
+        { owner: "ValveSoftware", name: "Proton", platform: "github" },
+        { owner: "Lightless-Sync", name: "LightlessClient", platform: "gitea", customUrl: "https://git.lightless-sync.org/Lightless-Sync/LightlessClient" },
+        { owner: "laewliet", name: "make-your-choice", platform: "github" },
+        { owner: "laewliet", name: "red-ios", platform: "github" },
+        { owner: "laewliet", name: "near-bot", platform: "github" },
     ] as Repository[]
 };
+
+// Helper functions for platform-specific URLs
+function getRepositoryUrl(repo: Repository): string {
+    if (repo.customUrl) {
+        return repo.customUrl;
+    }
+
+    const platform = repo.platform || "github";
+    const config = PLATFORMS[platform];
+    return `${config.baseUrl}/${repo.owner}/${repo.name}`;
+}
+
+function getRepositoryApiUrl(repo: Repository): string | null {
+    if (repo.customUrl) {
+        // For custom URLs, try to extract the base and construct API URL
+        // Format: https://git.example.com/owner/repo -> https://git.example.com/api/v1
+        const match = repo.customUrl.match(/^(https?:\/\/[^\/]+)/);
+        if (match) {
+            return `${match[1]}/api/v1`;
+        }
+        return null;
+    }
+
+    const platform = repo.platform || "github";
+    const config = PLATFORMS[platform];
+    return config.supportsApi ? config.apiUrl : null;
+}
+
+function getUserApiEndpoint(repo: Repository): string | null {
+    const apiUrl = getRepositoryApiUrl(repo);
+    if (!apiUrl) return null;
+
+    const platform = repo.platform || "github";
+
+    if (platform === "github") {
+        return `${apiUrl}/users/${repo.owner}`;
+    } else {
+        // Gitea and Codeberg use the same API structure
+        return `${apiUrl}/users/${repo.owner}`;
+    }
+}
 
 // Project Data
 interface ProjectLink {
@@ -381,16 +452,56 @@ class RepositoryListHandler {
         this.repositories = repositories;
     }
 
-    private async fetchOwnerAvatar(owner: string): Promise<string> {
+    private async fetchOwnerAvatar(repo: Repository): Promise<string> {
         try {
-            const response = await fetch(`https://api.github.com/users/${owner}`);
+            // For Gitea and Codeberg, use direct avatar URLs to avoid CORS issues
+            if (repo.platform === "gitea" || repo.platform === "codeberg") {
+                return this.getDirectAvatarUrl(repo);
+            }
+
+            const apiEndpoint = getUserApiEndpoint(repo);
+            if (!apiEndpoint) {
+                console.warn(`No API endpoint available for ${repo.owner}/${repo.name}`);
+                return "";
+            }
+
+            const response = await fetch(apiEndpoint);
             if (!response.ok) throw new Error("Failed to fetch owner data");
             const data = await response.json();
-            return data.avatar_url;
+
+            // Both GitHub and Gitea/Codeberg APIs return avatar_url
+            return data.avatar_url || "";
         } catch (error) {
-            console.error(`Error fetching avatar for ${owner}:`, error);
-            return "";
+            console.error(`Error fetching avatar for ${repo.owner}:`, error);
+            // Fallback to direct avatar URL if API call fails
+            return this.getDirectAvatarUrl(repo);
         }
+    }
+
+    private getDirectAvatarUrl(repo: Repository): string {
+        const platform = repo.platform || "github";
+
+        if (repo.customUrl) {
+            // Extract base URL from custom URL
+            const match = repo.customUrl.match(/^(https?:\/\/[^\/]+)/);
+            if (match) {
+                const baseUrl = match[1];
+                // Gitea/Forgejo direct avatar pattern
+                return `${baseUrl}/user/avatar/${repo.owner}/-1`;
+            }
+        }
+
+        const config = PLATFORMS[platform];
+
+        if (platform === "github") {
+            // GitHub avatar URL pattern
+            return `https://github.com/${repo.owner}.png`;
+        } else if (platform === "gitea" || platform === "codeberg") {
+            // Gitea/Codeberg/Forgejo avatar pattern
+            return `${config.baseUrl}/user/avatar/${repo.owner}/-1`;
+        }
+
+        return "";
     }
 
     public async populateProjects(): Promise<void> {
@@ -402,10 +513,15 @@ class RepositoryListHandler {
 
         // Fetch owner avatars and populate list
         for (const repo of this.repositories) {
-            const avatarUrl = await this.fetchOwnerAvatar(repo.owner);
+            const avatarUrl = await this.fetchOwnerAvatar(repo);
+            const repoUrl = getRepositoryUrl(repo);
 
             const item = document.createElement("li");
             item.className = "project-item";
+            item.style.cursor = "pointer";
+            item.addEventListener("click", () => {
+                window.open(repoUrl, "_blank");
+            });
 
             const iconDiv = document.createElement("div");
             iconDiv.className = "project-icon";
