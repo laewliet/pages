@@ -114,33 +114,24 @@ interface Project {
     features: string[];
     images: ProjectImage[];
     links: ProjectLink[];
+    notice?: string; // Optional notice/warning message displayed in modal
+    badge?: string; // Optional badge text displayed on project card
 }
 
 const PROJECTS: Project[] = [
     {
-        id: "near",
-        title: "Near",
-        tagline: "A discord.js app w/ database integration",
-        about: "Discord bot built with TypeScript & JavaScript featuring slash commands, event handling, and PostgreSQL database integration for managing user data and server configurations.",
-        features: [
-            "Server-wide deployment or personal app functionality",
-            "DM and group chat support",
-            "Modern Discord bot architecture",
-            "Integrates with various APIs such as Spotify, Apple Music, Minecraft."
-        ],
+        id: "red",
+        title: "Red (for Reddit)",
+        tagline: "A blazing fast native iOS app that feels right at home on your iPhone",
+        about: "A blazing fast native iOS app that feels right at home on your iPhone.",
+        features: [],
         images: [
-            { src: "../assets/img/projects/near/preview.jpg", description: "Near Discord bot preview" },
-            { src: "../assets/img/projects/near/invite-popup.png", description: "Discord app invite options showing server-wide and personal app availability." },
-            { src: "../assets/img/projects/near/screenshot1.png", description: "Easily share songs with friends no matter what streaming service they use" },
-            { src: "../assets/img/projects/near/screenshot2.png", description: "Preview song snippets using Spotify's API." },
-            { src: "../assets/img/projects/near/screenshot3.png", description: "Get live game information such as the Dead by Daylight shrine content." }
+            { src: "../assets/img/projects/red-ios/preview.jpeg", description: "Red for Reddit iOS app preview" },
+            { src: "../assets/img/projects/red-ios/1.png", description: "Red app interface" }
         ],
-        links: [
-            {
-                label: "Add to Discord",
-                url: "https://discord.com/oauth2/authorize?client_id=800998960851845150"
-            }
-        ]
+        links: [],
+        notice: "⚠️ This project hasn't been released yet or officially announced. Stay tuned!",
+        badge: "SOON"
     },
     {
         id: "makeyourchoice",
@@ -190,6 +181,31 @@ const PROJECTS: Project[] = [
             { src: "../assets/img/projects/panva/light-mode.jpg", description: "Full app interface in light mode." }
         ],
         links: []
+    },
+    {
+        id: "near",
+        title: "Near",
+        tagline: "A discord.js app w/ database integration",
+        about: "Discord bot built with TypeScript & JavaScript featuring slash commands, event handling, and PostgreSQL database integration for managing user data and server configurations.",
+        features: [
+            "Server-wide deployment or personal app functionality",
+            "DM and group chat support",
+            "Modern Discord bot architecture",
+            "Integrates with various APIs such as Spotify, Apple Music, Minecraft."
+        ],
+        images: [
+            { src: "../assets/img/projects/near/preview.jpg", description: "Near Discord bot preview" },
+            { src: "../assets/img/projects/near/invite-popup.png", description: "Discord app invite options showing server-wide and personal app availability." },
+            { src: "../assets/img/projects/near/screenshot1.png", description: "Easily share songs with friends no matter what streaming service they use" },
+            { src: "../assets/img/projects/near/screenshot2.png", description: "Preview song snippets using Spotify's API." },
+            { src: "../assets/img/projects/near/screenshot3.png", description: "Get live game information such as the Dead by Daylight shrine content." }
+        ],
+        links: [
+            {
+                label: "Add to Discord",
+                url: "https://discord.com/oauth2/authorize?client_id=800998960851845150"
+            }
+        ]
     }
 ];
 
@@ -682,6 +698,18 @@ class ProjectModalHandler {
                 linksEl.innerHTML = "<p class=\"no-links\">No public links available</p>";
             }
         }
+
+        // Update notice (if exists)
+        const noticeEl = this.modal.querySelector(".modal-notice");
+        const noticeSectionEl = this.modal.querySelector(".modal-notice-section") as HTMLElement;
+        if (noticeEl && noticeSectionEl) {
+            if (project.notice) {
+                noticeEl.textContent = project.notice;
+                noticeSectionEl.style.display = "block";
+            } else {
+                noticeSectionEl.style.display = "none";
+            }
+        }
     }
 
     private initializeGallery(galleryWrapper: HTMLElement): void {
@@ -791,8 +819,13 @@ class ProjectModalHandler {
             const previewImage = project.images.length > 0 ? project.images[0].src : "";
             const imageStyle = previewImage ? `style="background-image: url('${previewImage}'); background-size: cover; background-position: center;"` : "";
 
+            // Add badge if exists
+            const badgeHTML = project.badge ? `<div class="project-badge">${project.badge}</div>` : "";
+
             card.innerHTML = `
-                <div class="project-card-image" ${imageStyle}></div>
+                <div class="project-card-image" ${imageStyle}>
+                    ${badgeHTML}
+                </div>
                 <h3 class="project-card-title">${project.title}</h3>
                 <p class="project-card-meta">${project.tagline}</p>
             `;
